@@ -1,10 +1,10 @@
-#JARVIS
+# JARVIS
 
-##*功能*
+## *功能*
 
 	实现对电脑的远程监控，目前已实现实时截图，发送关机指令功能
 
-##*结构* 
+## *结构* 
 	Web应用（JARVIS）和Java应用（Server，PCClient）配合实现功能
 ![enter image description here](https://raw.githubusercontent.com/pokerfaceSad/JARVIS/master/System.png)
  
@@ -46,7 +46,7 @@
 	- 等待键盘输入线程(ReceiveInput) 
 		接受键盘输入，若是“closeClient”则关闭客户端
  
-##*遇到的问题*
+## *遇到的问题*
 
  1. Windows端发送心跳包，Socket的成员方法
 	 `public void sendUrgentData(int data)
