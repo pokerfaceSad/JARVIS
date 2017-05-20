@@ -18,11 +18,7 @@ import pokerface.Sad.util.Util;
  * 邮件发送工具实现类  
  */  
 public class MailUtil { 
-	public static void main(String[] args) throws FileNotFoundException, IOException
-	{
-		
-	}
-	public static void sendScreenShot() throws FileNotFoundException, IOException, EmailException{
+	public static void sendPic(String subject,String picPath) throws FileNotFoundException, IOException, EmailException{
 		Properties pro = Util.getProperties();
 		Mail mail = new Mail();  
 	    mail.setHost(pro.getProperty("mailHost")); // 设置邮件服务器  
@@ -30,9 +26,9 @@ public class MailUtil {
 	    mail.setReceiver(pro.getProperty("mailReceiver")); // 接收人  
 	    mail.setUsername(pro.getProperty("mailUsername")); // 登录账号  
 	    mail.setPassword(pro.getProperty("mailPassword")); // 发件人邮箱的登录密码  
-	    mail.setSubject("ScreenShot");  
+	    mail.setSubject(subject);  
 	    mail.setMessage(Util.getDate());
-	    mail.setAttachment(pro.getProperty("RobotWorkPlace")+"PrtSc/screen.jpg", "", "");
+	    mail.setAttachment(picPath, "", "");
 	    new MailUtil().send(mail);
 	}
 	

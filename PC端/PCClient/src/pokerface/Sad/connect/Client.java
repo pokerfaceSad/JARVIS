@@ -65,6 +65,7 @@ public class Client extends Socket{
 		}		
 	}
 	public static void main(String[] args) {
+		
 		Client c1 = null;
 		String order = null;
 		String cmdOrder = null;
@@ -95,6 +96,7 @@ public class Client extends Socket{
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}catch(SocketException e){
+			System.out.println("connect failed!!!");
 			return;
 		}catch (IOException e) {
 			e.printStackTrace();

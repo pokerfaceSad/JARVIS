@@ -18,6 +18,12 @@ import javax.imageio.ImageIO;
 
 import org.apache.commons.mail.EmailException;
 
+import com.github.sarxos.webcam.Webcam;
+import com.github.sarxos.webcam.WebcamPanel;
+import com.github.sarxos.webcam.WebcamResolution;
+import com.github.sarxos.webcam.WebcamUtils;
+import com.github.sarxos.webcam.util.ImageUtils;
+
 import pokerface.Sad.mail.MailUtil;
 
 
@@ -47,12 +53,32 @@ public class Util {
 					0, 0, dim.width, dim.height));
 			ImageIO.write(bim, "jpg", new File(filePath));
 			//邮件发送截图
-			MailUtil.sendScreenShot();
+			MailUtil.sendPic("ScreenShot", filePath);
 	}
 
 	//关机
 	public static void shutdown() throws IOException, AWTException, EmailException{
 		Runtime.getRuntime().exec("shutdown -s -t 60");
 		screenShot();
+	}
+	//摄像头拍照
+	public static void takePicture() throws FileNotFoundException, IOException, EmailException {
+		Webcam webcam = null;
+		String filePath = null;
+		try{
+		Properties pro = getProperties();
+		filePath = pro.getProperty("RobotWorkPlace")+"CamPic/Pic";
+		webcam = Webcam.getDefault();
+        webcam.setViewSize(WebcamResolution.VGA.getSize());
+        WebcamPanel panel = new WebcamPanel(webcam);
+        panel.setFPSDisplayed(true);
+        panel.setDisplayDebugInfo(true);
+        panel.setImageSizeDisplayed(true);
+        panel.setMirrored(true);
+        WebcamUtils.capture(webcam, filePath, ImageUtils.FORMAT_PNG);
+		}finally{
+			webcam.close();
+		}
+        MailUtil.sendPic("Camera", filePath+".png");
 	}
 }
