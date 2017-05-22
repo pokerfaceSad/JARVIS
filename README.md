@@ -1,6 +1,8 @@
 # JARVIS
+## *更新 2.0*
+1. 增加了拍照（takepicture）功能，使用了开源库[webcam-capture][1]调用电脑摄像头，然后将通过邮件发送照片
 
-## *更新*
+## *更新 1.0*
 
 1. 增加了指令执行结果的反馈，Server端转发PC端的执行结果至Web端
 2. 修改Client类和Server类，~~从自定义类将Socket类和ServerSocket类作为成员变量~~（当时只有我和上帝知道为什么要这么写，现在只有上帝知道）修改为直接继承Socket类和ServerSocket类
@@ -82,3 +84,5 @@
 	```
  2. 开放服务器端用于Server和PCClient连接的端口。
 
+
+  [1]: https://github.com/sarxos/webcam-capture
