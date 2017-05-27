@@ -9,8 +9,9 @@
 ```
 安装后需要在在安装目录中找到JARVIS.properties配置文件，修改其serverIP项为服务器的IP地址，默认为127.0.0.1
 ```
+![apk][1]
 ## *更新 2.0*
-1. 增加了拍照（takepicture）功能，使用了开源库[webcam-capture][1]调用电脑摄像头，然后将通过邮件发送照片
+1. 增加了拍照（takepicture）功能，使用了开源库[webcam-capture][2]调用电脑摄像头，然后将通过邮件发送照片
 
 ## *更新 1.0*
 
@@ -28,7 +29,7 @@
 
 ## *结构* 
 	Web应用（JARVIS）和Java应用（Server，PCClient）配合实现功能
-![enter image description here](https://raw.githubusercontent.com/pokerfaceSad/JARVIS/master/System.png)
+![enter image description here](https://raw.githubusercontent.com/pokerfaceSad/JARVIS/master/pic/System.png)
  
 
  -  JARVIS和Server运行在服务器上，两者以Socket流本地连接(Server为ServerSocket)，JARVIS负责从移动端接收命令后通过Socket流发送给Server。
@@ -95,4 +96,5 @@
  2. 开放服务器端用于Server和PCClient连接的端口。
 
 
-  [1]: https://github.com/sarxos/webcam-capture
+  [1]: https://raw.githubusercontent.com/pokerfaceSad/JARVIS/master/pic/apk.png
+  [2]: https://github.com/sarxos/webcam-capture
