@@ -10,10 +10,11 @@ import org.apache.commons.mail.EmailException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import pokerface.Sad.connect.PCClient;
+import pokerface.Sad.connect.RPiClient;
 import pokerface.Sad.util.Util;
 
 public class ServiceImpl1 implements Service{
+	
 	static Logger logger = null;
 	static{
 		PropertyConfigurator.configure("log4j.properties");
@@ -23,7 +24,7 @@ public class ServiceImpl1 implements Service{
 	@Override
 	public String execOrder(String order) {
 		String result = "Ö´ÐÐÊ§°Ü";
-		PCClient c1 = null;
+		RPiClient c1 = null;
 		String methodName = null;
 		Properties pro = null;
 		Class cls = null;

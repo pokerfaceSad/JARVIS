@@ -6,68 +6,72 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
+
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 import pokerface.Sad.util.Util;
 
+public class Server extends ServerSocket {
 
-public class Server extends ServerSocket{
-	
+	static Logger logger = null;
+	static {
+		PropertyConfigurator.configure("log4j.properties");
+		logger = Logger.getLogger(Server.class);
+	}
+
 	final static String heatbeatMsg = "heartbeating";
-	Socket pcClient = null;  //PC端Client
-	Socket webClient = null; //web端Client
+	final static String pcStateCheckOrder = "pcStateCheck";
+	Socket pcClient = null; // PC端Client
+	Socket webClient = null; // web端Client
+	RPiServer rPiServer = new RPiServer(); //rPiServer
 	boolean pcConnectState = false;
-	
+
 	public static void main(String[] args) throws IOException {
 		Server s = new Server();
-		System.out.println("wait for Web part...");
-		s.acceptWeb();//等待Web连接
-		//服务正常启动
-		System.out.println("JARVIS Service Start Up Normally......");
+		logger.info("wait for Web part...");
+		s.acceptWeb();// 等待Web连接
+		// 服务正常启动
+		logger.info("JARVIS Service Start Up Normally......");
 		Thread webMonitorThread = new Thread(new WebOrderMonitor(s));
 		webMonitorThread.start();
-		s.acceptPC();//等待PC连接
-		Thread clientMonitorThead = new Thread(new PCStateMonitor(s));
-		clientMonitorThead.start();
-		while(true)
-		{
-			//if((!webMonitorThread.isAlive())&&(!clientMonitorThead.isAlive()))
-			if(!clientMonitorThead.isAlive())
-			{
-				s.acceptPC(); //等待两线程终止则PC端已断开连接，等待PC再次连接
-				//webMonitorThread = new Thread(new WebOrderMonitor(s));
-				clientMonitorThead = new Thread(new PCStateMonitor(s));
-//				webMonitorThread.start();
-				clientMonitorThead.start();
-			}
-		}
-		
+		Thread rPiMonitorThread = new Thread(new RPiStateMonitor(s.rPiServer));
+		rPiMonitorThread.start();
+		Thread pcMonitorThead = new Thread(new PCStateMonitor(s));
+		pcMonitorThead.start();
+
 	}
+
 	public Server() throws IOException {
-		//从配置文件中读取端口，并创建Server对象
+		// 从配置文件中读取端口，并创建Server对象
 		super(new Integer(Util.getProperties().getProperty("serverPort")));
+		logger.debug("创建Server对象成功");
 	}
-	//等待PC连接
-	public void acceptPC() throws IOException{
-		System.out.println("wait for PC connect......");
+
+	// 等待PC连接
+	public void acceptPC() throws IOException {
+		logger.info("wait for PC connect......");
 		pcClient = this.accept();
-		System.out.println("PC :"+pcClient.getInetAddress()+" connect");
+		logger.info("PC :" + pcClient.getInetAddress() + " connect");
 		pcConnectState = true;
 	}
-	//等待Web应用连接
-	public void acceptWeb() throws IOException{
+
+	// 等待Web应用连接
+	public void acceptWeb() throws IOException {
 		webClient = this.accept();
-		System.out.println("Web :"+webClient.getInetAddress()+" connect");
+		System.out.println("Web :" + webClient.getInetAddress() + " connect");
 	}
-	//向PC端发送命令
-	public void sendMsgToClient(Socket client,String msg) throws IOException{
+
+	// 向客户端端发送命令
+	public void sendMsgToClient(Socket client, String msg) throws IOException {
 		OutputStream os = client.getOutputStream();
-		os.write(msg.getBytes());
+		os.write(msg.getBytes("GBK"));
 		os.flush();
-		//os.close(); socket流不能关闭
+		// os.close(); socket流不能关闭
 	}
-	//从PC端接收结果信息
-	public String getMsgFromClient(Socket client){
+
+	// 从客户端端接收结果信息
+	public String getMsgFromClient(Socket client) {
 		InputStream is = null;
 		byte[] buf = null;
 		int Len = 0;
@@ -81,49 +85,30 @@ public class Server extends ServerSocket{
 
 		String result = null;
 		try {
-			result = new String(buf,0,Len,"GBK");
+			result = new String(buf, 0, Len, "GBK");
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
-	
+
 		return result;
 	}
-	
-	////从web应用处接收命令,阻塞等待指令直至PC端断开为止
-	//与Web保持长连接
-	public String receiveOrder() throws IOException{
-//		this.webClient.setSoTimeout(5000);//设置超时策略，防止阻塞于read方法中
+
+	// 与Web保持长连接
+	public String receiveOrder() throws IOException {
 		InputStream is = this.webClient.getInputStream();
 		byte[] buf = new byte[1024];
 		Integer len = null;
 		String msg = null;
-		
-		if((len=is.read(buf))!=-1)
-		{
+
+		if ((len = is.read(buf)) != -1) {
 			msg = new String(buf, 0, len);
 			return msg;
 		}
-		/*
-		//若PC端仍连接，则一直等待Web端传来指令
-		//pcConnectState由ClientMonitor线程维护
-		while(this.pcConnectState)
-		{
-			try {
-				if((len=is.read(buf))!=-1)
-				{
-					msg = new String(buf, 0, len);
-					return msg;
-				}
-			} catch (SocketTimeoutException e) {
-				//每五秒跳出一次判断PC端是否还在线
-			}
-		}
-		*/
 		return null;
 	}
-	public void close(){
-		if(this.pcClient!=null)
-		{
+
+	public void close() {
+		if (this.pcClient != null) {
 			try {
 				this.pcClient.close();
 			} catch (IOException e) {
@@ -132,83 +117,173 @@ public class Server extends ServerSocket{
 		}
 		this.close();
 	}
-	public boolean isConnected(){
-        try{
-        	/*
-        	 * 此发送紧急数据的方法在Windows环境下会出现异常
-        	 * this.pcClient.sendUrgentData(0xff);
-        	 * */
-        	this.sendMsgToClient(this.pcClient,Server.heatbeatMsg);
-        	return true;
-        }catch(Exception e){
-            return false;
-        }
-}
-}
 
-//等待Web命令线程
-class WebOrderMonitor implements Runnable{
-	Server server = null;
-	public WebOrderMonitor(Server Server) {
-		this.server = Server;
-	}
-	public void run() {
+	public boolean isConnected(Socket client) {
 		try {
-			
-			String order = null;
-			
-			while(true)
-			{
-//				if(!server.isConnected())
-//				{
-//					//若PC端已断开则终止线程
-//					return;
-//				}
-				
-				//阻塞接收Web端指令直至PC端断开并返回null
-				order = server.receiveOrder();
-//				if(order==null) 
-//				{
-//					System.out.println("等待Web命令线程终止");
-//					return; //若PC端已断开则终止线程
-//				}
-				//将接收到的命令转发给PC端
-				String result = null;
-				if(server.pcConnectState == true)
-				{
-					server.sendMsgToClient(server.pcClient,order);
-					//接收PC端反馈的结果信息
-					result = server.getMsgFromClient(server.pcClient);
-				}else{
-					result = "PC不在线";
-				}
-				//将结果信息转发给web端
-				server.sendMsgToClient(server.webClient, result);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
+			/*
+			 * 此发送紧急数据的方法在Windows环境下会出现异常 this.pcClient.sendUrgentData(0xff);
+			 */
+			logger.debug("向PC端发送心跳信息");
+			this.sendMsgToClient(client, Server.heatbeatMsg);
+			logger.debug("向PC端发送心跳信息成功");
+			return true;
+		} catch (Exception e) {
+			logger.debug("向PC端发送心跳信息失败");
+			return false;
 		}
 	}
 }
-//等待客户端关闭线程
-class PCStateMonitor implements Runnable{
+
+// 等待Web命令线程
+class WebOrderMonitor implements Runnable {
+
+	static Logger logger = null;
+	static {
+		PropertyConfigurator.configure("log4j.properties");
+		logger = Logger.getLogger(Server.class);
+	}
+
+	Server server = null;
+
+	public WebOrderMonitor(Server Server) {
+		this.server = Server;
+	}
+
+	public void run() {
+		logger.debug("WebOrderMonitor线程启动");
+		
+		try {
+			String order = null;
+
+			while (true) {
+				logger.debug("阻塞接收指令...");
+				order = server.receiveOrder();
+				logger.debug("接收到"+order+"指令");
+				/*
+				 * 检测接收到的order是否为检测PC状态指令 若是则直接返回PC状态
+				 */
+				String response = null;
+				if (order.equals(Server.pcStateCheckOrder)) {
+					logger.debug("返回PC状态");
+					response = server.pcConnectState ? "PC在线" : "PC不在线";
+				} else if(order.equals(Util.getProperties().getProperty("WOL"))){
+					
+					if (server.rPiServer.rPiConnectState == true) {
+						logger.debug("rPi在线");
+						logger.debug("将命令发送给rPi端");
+						server.rPiServer.sendMsgToClient(server.rPiServer.rPiClient, order);
+						// 接收PC端反馈的结果信息
+						logger.debug("等待rPi端反馈");
+						response = server.rPiServer.getMsgFromClient(server.rPiServer.rPiClient);
+						logger.debug("接收到rPi端反馈："+response);
+					} else {
+						logger.debug("rPi不在线");
+						response = "rPi不在线";
+					}
+				} else {
+					// 将接收到的命令转发给PC端
+					if (server.pcConnectState == true) {
+						logger.debug("PC在线");
+						logger.debug("将命令发送给PC端");
+						server.sendMsgToClient(server.pcClient, order);
+						// 接收PC端反馈的结果信息
+						logger.debug("等待PC端反馈");
+						response = server.getMsgFromClient(server.pcClient);
+						logger.debug("接收到PC端反馈："+response);
+					} else {
+						logger.debug("PC不在线");
+						response = "PC不在线";
+					}
+				}
+				// 将结果信息转发给web端
+				logger.debug("将PC端反馈发送到web端");
+				server.sendMsgToClient(server.webClient, response);
+				logger.debug("发送成功");
+			}
+		} catch (IOException e) {
+			logger.error("出现异常",e);
+		}
+	}
+}
+
+/**
+ * 此线程负责PC端的连接和状态监测
+ * 
+ */
+class PCStateMonitor implements Runnable {
+
+	static Logger logger = null;
+	static {
+		PropertyConfigurator.configure("log4j.properties");
+		logger = Logger.getLogger(Server.class);
+	}
 
 	Server Server = null;
+
 	public PCStateMonitor(Server s) {
 		this.Server = s;
 	}
-	public void run() {
 
-		while(Server.isConnected()){
-			//检测PC端是否还在线
+	public void run() {
+		logger.debug("PCStateMonitor线程启动");
+		while (true) {
 			try {
-				Thread.currentThread().sleep(1000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+				// 等待PC连接
+				this.Server.acceptPC();
+			} catch (IOException e) {
+				logger.error("PC连接异常",e);
 			}
-		}	
-		System.out.println("PC端已离线");
-		this.Server.pcConnectState = false;
-		System.out.println("等待客户端关闭线程终止");
+			while (Server.isConnected(Server.pcClient)) {
+				// 检测PC端是否还在线
+				logger.debug("PC端在线");
+				try {
+					Thread.currentThread().sleep(1000);
+				} catch (InterruptedException e) {
+					logger.error("中断异常",e);
+				}
+			}
+			logger.info("PC端已离线");
+			this.Server.pcConnectState = false;
+		}
+
+	}
+}
+
+class RPiStateMonitor implements Runnable {
+
+	static Logger logger = null;
+	static {
+		PropertyConfigurator.configure("log4j.properties");
+		logger = Logger.getLogger(Server.class);
+	}
+
+	RPiServer rPiServer = null;
+
+	public RPiStateMonitor(RPiServer rPiServer) {
+		this.rPiServer = rPiServer;
+	}
+
+	public void run() {
+		logger.debug("RPiStateMonitor线程启动");
+		while (true) {
+			try {
+				// 等待rPi连接
+				rPiServer.acceptRPi();
+			} catch (IOException e) {
+				logger.error("rPi连接异常", e);
+			}
+			while (rPiServer.isConnected(rPiServer.rPiClient)) {
+				logger.debug("rPi在线");
+				// 检测rPi端是否还在线
+				try {
+					Thread.currentThread().sleep(1000);
+				} catch (InterruptedException e) {
+					logger.error("中断异常", e);
+				}
+			}
+			logger.info("RPi端已离线");
+			rPiServer.rPiConnectState = false;
+		}
+
 	}
 }

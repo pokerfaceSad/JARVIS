@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -20,7 +21,6 @@ import javax.servlet.http.HttpServletResponse;
 public class JARVIS implements Servlet{
 	
 	Socket s = null;
-	boolean isPCConnecting = false;	
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		//服务器启动时就创建此对象，并在创建对象时建立于Server的Socket连接
@@ -78,5 +78,6 @@ public class JARVIS implements Servlet{
 		
 	}
 	
+
 }
 
