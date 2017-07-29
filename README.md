@@ -62,7 +62,8 @@
 
 		}	
 
-#### PCClient(extends Socket 运行于PC端和Server连接，从Server处接收命令，执行并反馈)
+#### PCClient(extends Socket 运行于PC端，和Server连接，从Server处接收命令，执行并反馈)
+
 	主线程Main Thread
 	
 	1.主动连接Server
@@ -74,7 +75,7 @@
 	4.将执行结果反馈到Server端，回到->1
 
 
-#### RPiClient extends Socket 等待Server传来WOL指令，则执行对应方法唤醒PC
+#### RPiClient(extends Socket 运行于RPi端，和Server连接等待Server传来WOL指令，则执行对应方法唤醒PC)
 	
 	主线程Main Thread
 	
