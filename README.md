@@ -1,17 +1,116 @@
 # JARVIS
-## *仍待完善的功能*
 
-1. PCClient的断线重连，以避免网络波动导致的PCClient掉线。
-2. 增加远程唤醒（基于WOL）功能
+### 通过手机（或任何可以发送Http请求的设备）对PC进行监控
+
+## 功能
+
+1. 唤醒 唤醒处于关机或休眠状态的PC（此功能需要与PC处于同一局域网的设备支持，测试用RPi——树莓派）
+2. 拍照 调用电脑摄像头拍照发送至指定邮箱（需要有摄像头）
+3. 关机 向PC发送关机指令
+4. 截图 截取当前显示器画面发送至指定邮箱
+5. 检测 检测PC和RPi是否连接
+
+## 结构
+![结构图][1]
+## 伪代码
+
+#### JARVIS（Web应用，负责接收命令发送给Server）
+
+	1. init()方法中，主动连接Server
+	2. Service()方法中，将前端传来的指令发送给Server,然后将反馈信息，输出至前端
+	
+
+#### Server（ extends ServerSocket	负责转发调度）
+	
+	主线程Main Thread
+	
+	1. 启动后首先等待JARVIS(Web端)连接
+	2. Web连接成功后，创建
+		Thread--webMonitorThread
+		此线程负责Server与Web的连接
+        {
+		
+    		1>  等待Web端传来指令（阻塞）
+
+    		2>  检测指令是否为检测PC状态指令，若是则只返回PC的连接状态
+    			检测指令是否为WOL指令，若是则转发至RPiClient端
+    		  	若PC在线，则转发指令至PC端，然后等待指令执行结果，再将此结果反馈给Web端
+    		  	若PC不在线，向Web返回（通过Socket）“PC不在线”信息		
+    		
+    		    Note:这是一个长连接，不断开
+		}
+
+	3. 创建
+		Thread--pcMonitorThead
+		由此线程负责PC的连接
+        {
+		
+    		1>等待PCClient连接（阻塞）
+
+    		2>每隔一秒向PCClient发送心跳信息
+    			若发送失败则说明PC已离线,回到->1
+
+		}
+	4. 创建
+		Thread--rPiMonitorThread
+		由此线程负责RPi的连接
+        {
+		
+    		1>等待RPiClient连接（阻塞）
+    		2>每隔一秒向RPiClient发送心跳信息
+    			若发送失败则说明RPi已离线,回到->1
+
+		}	
+
+#### PCClient(extends Socket 运行于PC端和Server连接，从Server处接收命令，执行并反馈)
+	主线程Main Thread
+	
+	1.主动连接Server
+	2.创建
+		Thread--ReceiveInput
+		此线程负责监听键盘输入的关闭客户端指令
+	3.等待Server端传来指令
+		接收到指令后通过Service接口调用execOrder()方法使用反射机制执行响应指令
+	4.将执行结果反馈到Server端，回到->1
+
+
+#### RPiClient extends Socket 等待Server传来WOL指令，则执行对应方法唤醒PC
+	
+	主线程Main Thread
+	
+	1. 主动连接Server
+	2. 创建
+		Thread--ReceiveInput
+		此线程负责监听键盘输入的关闭客户端指令
+	3. 等待Server端传来指令
+		接收到指令后通过Service接口调用execOrder()方法使用反射机制执行响应指令
+	4. 将执行结果反馈到Server端，回到->1	
+
+
+#### Browser/App(向JARVIS发送Http请求并分析响应)
+
+
+## 仍待完善的功能
+
+1. PCClient和RPiClient的断线重连，以避免网络波动导致掉线。
+
+## 更新日志
+
+## *更新 4.0*
+1. 增加了远程唤醒功能。让PC处于同一局域网下的设备（用RPi——树莓派做测试）连接到Server端，响应WakeOn指令唤醒PC
+2. Server端增加了RPiServer类管理RPi的连接
+3. Server端增加了RPiStateMonitor线程，通过RPiServer对象，等待RPi连接并监听RPi的连接状态 
+4. PC端增加了RPiClient（运行于与PC处于同一局域网的设备上）负责
+5. 修改了Server端PCStateMonitor线程，通过Server对象， 等待PC连接并负责监听PC的连接状态
 
 ## *更新 3.0*
 1. 增加了（简单丑陋的）Android客户端
 ```
 安装后需要在在安装目录中找到JARVIS.properties配置文件，修改其serverIP项为服务器的IP地址，默认为127.0.0.1
 ```
-![apk][1]
+![apk][2]
 ## *更新 2.0*
-1. 增加了拍照（takepicture）功能，使用了开源库[webcam-capture][2]调用电脑摄像头，然后将通过邮件发送照片
+1. 增加了拍照（takepicture）功能，使用了开源库[webcam-capture][3]调用电脑摄像头，然后将通过邮件发送照片
 
 ## *更新 1.0*
 
@@ -20,54 +119,7 @@
 3. 修改了执行指令的方法，~~从在Client类main方法中直接反射机制调用Util类~~修改为定义Service接口，PCClient通过Service接口执行指令
 4. 修改了Server端和Web端的连接方式，~~从仅当PC连接时才接收指令~~修改为始终接收web端的指令，若PC未连接则将将“PC不在线”的信息反馈给Web端
 
-----------
 
-
-## *功能*
-
-	实现对电脑的远程监控，目前已实现实时截图，发送关机指令功能
-
-## *结构* 
-	Web应用（JARVIS）和Java应用（Server，PCClient）配合实现功能
-![enter image description here](https://raw.githubusercontent.com/pokerfaceSad/JARVIS/master/pic/System.png)
- 
-
- -  JARVIS和Server运行在服务器上，两者以Socket流本地连接(Server为ServerSocket)，JARVIS负责从移动端接收命令后通过Socket流发送给Server。
- 
- 
- - PCClient和运行在PC端，以Socket流和Server远程连接(Server为ServerSocket)，PCclient负责从Server处接收指令，并执行。
-
-		JARVIS负责接收指令，PCClient负责执行指令，Server负责调度转发。
-
- 1. Server服务端(Server)   
- （1）先初始化Server对象  
- （2）先等待Web端连接  
- （3）再等待PC端Client对象连接  
- （4） 两线程共享Server对象，并以成员变量pcConnectState来共享PC端的连接情况。  
-
-	- 监听PC端Client断开线程(ClientMonitor)
-	    每十秒钟isConnected()方法判断一次PC端是否还在线，若已离线则修改成员变量pcConnectState
-	    并终止线程
-		    
-	- 等待Web命令线程(WebMonitor)
-	
-	    read()等待Web端传来指令，调用Socket类成员方法setSoTimeOut()设置read()的超时时间以解决read()方法的阻塞问题，每次跳出read()则依pcConnectState判断客户端是否已离线，是则终止线程
-	- 主线程(main)
-	
-	    主线程监听以上两线程是否都已终止，是则等待PC客户端连接，然后重新创建线程对象并启动
-
- 2. Web端(JARVIS) web.xml中添加 
- ```html
- <load-on-startup>1</load-on-startup>
- ```
- 让 Servlet对象在服务器启动时就被创建，并在init()方法中连接Server Service()方法通过Socket向Server发送指令
-
- 3. Client端(PCClient) 
- 
- 	- 主线程(main) 
-		等待接收从Server传来的命令，并执行指令 
-	- 等待键盘输入线程(ReceiveInput) 
-		接受键盘输入，若是“closeClient”则关闭客户端
  
 ## *遇到的问题*
 
@@ -96,5 +148,6 @@
  2. 开放服务器端用于Server和PCClient连接的端口。
 
 
-  [1]: https://raw.githubusercontent.com/pokerfaceSad/JARVIS/master/pic/apk.png
-  [2]: https://github.com/sarxos/webcam-capture
+  [1]:https://raw.githubusercontent.com/pokerfaceSad/JARVIS/master/pic/Syetem01.png
+  [2]: https://raw.githubusercontent.com/pokerfaceSad/JARVIS/master/pic/apk.png
+  [3]: https://github.com/sarxos/webcam-capture
