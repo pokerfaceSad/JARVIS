@@ -65,7 +65,6 @@ public class JARVIS implements Servlet{
 		PW.write("<font size=70px>"+result+"<br><br><font>");
 		PW.write("</body>");
 		PW.write("</html>");
-		System.out.println(req.getRemoteAddr());
 	}
 
 	@Override

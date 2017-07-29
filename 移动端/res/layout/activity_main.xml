@@ -1,0 +1,62 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="cn.pokerfaceSad.jarvis.MainActivity" >
+
+    <TextView
+        android:id="@+id/pcState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/pcState"
+        android:gravity="center"
+        android:text="PC不在线"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/rPiState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/rPiState"
+        android:layout_below="@+id/pcState"
+        android:gravity="center"
+        android:text="rPI不在线"
+        android:textSize="20sp" />
+
+	<Button
+		android:id="@+id/screen_shot"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+	    android:layout_below="@+id/rPiState"
+		android:text="截图"
+		/>
+
+	<Button
+	    android:id="@+id/take_picture"
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_alignLeft="@+id/screen_shot"
+	    android:layout_below="@+id/screen_shot"
+	    android:text="拍照" />
+
+	<Button
+	    android:id="@+id/shut_down"
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_alignLeft="@+id/take_picture"
+	    android:layout_below="@+id/take_picture"
+	    android:text="关机" />
+
+	<Button
+	    android:id="@+id/Wake_On"
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_alignLeft="@+id/Wake_On"
+	    android:layout_below="@+id/shut_down"
+	    android:text="唤醒" />
+
+</RelativeLayout>
