@@ -22,6 +22,7 @@ public class Server extends ServerSocket {
 
 	final static String heatbeatMsg = "heartbeating";
 	final static String pcStateCheckOrder = "pcStateCheck";
+	final static String rPiStateCheckOrder = "rPiStateCheck";
 	Socket pcClient = null; // PC端Client
 	Socket webClient = null; // web端Client
 	RPiServer rPiServer = new RPiServer(); //rPiServer
@@ -166,6 +167,9 @@ class WebOrderMonitor implements Runnable {
 				if (order.equals(Server.pcStateCheckOrder)) {
 					logger.debug("返回PC状态");
 					response = server.pcConnectState ? "PC在线" : "PC不在线";
+				} else if(order.equals(Server.rPiStateCheckOrder)) {
+					logger.debug("返回PC状态");
+					response = server.rPiServer.rPiConnectState ? "rPi在线" : "rPi不在线";
 				} else if(order.equals(Util.getProperties().getProperty("WOL"))){
 					
 					if (server.rPiServer.rPiConnectState == true) {
