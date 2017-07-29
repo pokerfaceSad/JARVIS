@@ -103,6 +103,8 @@
 3. Server端增加了RPiStateMonitor线程，通过RPiServer对象，等待RPi连接并监听RPi的连接状态 
 4. PC端增加了RPiClient（运行于与PC处于同一局域网的设备上）负责
 5. 修改了Server端PCStateMonitor线程，通过Server对象， 等待PC连接并负责监听PC的连接状态
+5. 采用log4j记录日志
+
 
 ## *更新 3.0*
 1. 增加了（简单丑陋的）Android客户端
